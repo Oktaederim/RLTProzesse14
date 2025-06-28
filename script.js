@@ -41,7 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
         jahresverbrauchWaerme: document.getElementById('jahresverbrauchWaerme'),
         jahresverbrauchKaelte: document.getElementById('jahresverbrauchKaelte'),
         jahresverbrauchVentilator: document.getElementById('jahresverbrauchVentilator'),
-        fanCostActive: document.getElementById('fanCostActive'),
         sfp: document.getElementById('sfp'),
         betriebsstundenGesamt: document.getElementById('betriebsstundenGesamt'),
         betriebstageGesamt: document.getElementById('betriebstageGesamt'),
@@ -256,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const kostenKuehlung = currentPowers.kaelte * inputs.preisKaelte;
         const kostenVentilator = leistungVentilator * inputs.preisStrom;
         
-        currentTotalCost = kostenHeizung + kostenKuehlung + (inputs.fanCostActive ? kostenVentilator : 0);
+        currentTotalCost = kostenHeizung + kostenKuehlung + kostenVentilator;
         
         dom.kostenHeizung.textContent = `${formatGerman(kostenHeizung, 2)} €/h`;
         dom.kostenHeizung.parentElement.title = `${formatGerman(currentPowers.waerme,2)} kW × ${formatGerman(inputs.preisWaerme,2)} €/kWh`;
@@ -283,14 +282,12 @@ document.addEventListener('DOMContentLoaded', () => {
         dom.jahreskostenKaelte.parentElement.title = `${formatGerman(jahresVerbrauchKaelte,0)} kWh/a × ${formatGerman(inputs.preisKaelte,2)} €/kWh`;
         dom.jahreskostenVentilator.textContent = `${formatGerman(jahreskostenVentilator, 0)} €/a`;
         dom.jahreskostenVentilator.parentElement.title = `${formatGerman(jahresVerbrauchVentilator,0)} kWh/a × ${formatGerman(inputs.preisStrom,2)} €/kWh`;
+        dom.jahreskostenGesamt.textContent = `${formatGerman(jahreskostenWaerme + jahreskostenKaelte + jahreskostenVentilator, 0)} €/a`;
         
-        const gesamtJahreskosten = jahreskostenWaerme + jahreskostenKaelte + (inputs.fanCostActive ? jahreskostenVentilator : 0);
-        dom.jahreskostenGesamt.textContent = `${formatGerman(gesamtJahreskosten, 0)} €/a`;
-        
-        dom.fanCostDisplays.forEach(d => d.classList.toggle('hidden', !inputs.fanCostActive));
+        dom.fanCostDisplays.forEach(d => d.classList.remove('hidden'));
         
         dom.setReferenceBtn.className = referenceState ? 'activated' : '';
-        dom.setReferenceBtn.textContent = referenceState ? 'Referenz festlegen' : 'Referenz gesetzt';
+        dom.setReferenceBtn.textContent = referenceState ? 'Referenz gesetzt' : 'Referenz festlegen';
 
         dom.referenceDetails.classList.toggle('invisible', !referenceState);
         if (referenceState) {
@@ -327,6 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (comp.kondensat) comp.kondensat.textContent = formatGerman(kondensat, 2);
         if (comp.wv) comp.wv.textContent = formatGerman(wasserstrom, 2);
     }
+
     function handleSetReference() {
         referenceState = { cost: currentTotalCost, temp: parseFloat(dom.tempZuluft.value), rh: parseFloat(dom.rhZuluft.value), vol: parseFloat(dom.volumenstrom.value) };
         dom.resetSlidersBtn.disabled = false;
@@ -335,16 +333,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function resetToDefaults() {
         allInteractiveElements.forEach(el => {
-            if (el.type === 'checkbox' || el.type === 'radio') {
-                const defaultChecked = el.dataset.defaultChecked === 'true';
-                if (el.checked !== defaultChecked) {
-                    el.checked = defaultChecked;
-                }
-            } else if (el.dataset.defaultValue) {
-                if (el.value !== el.dataset.defaultValue) {
-                    el.value = el.dataset.defaultValue;
-                }
-            }
+            if (el.type === 'checkbox' || el.type === 'radio') { el.checked = el.dataset.defaultChecked === 'true'; } 
+            else if(el.dataset.defaultValue) { el.value = el.dataset.defaultValue; }
         });
         referenceState = null;
         dom.resetSlidersBtn.disabled = true;
@@ -367,21 +357,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const isActive = dom.kuehlerAktiv.checked;
         dom.kuehlmodusWrapper.classList.toggle('disabled', !isActive);
         dom.kuehlmodusInputs.forEach(radio => radio.disabled = !isActive);
-        
         const checkedKuehlmodus = document.querySelector('input[name="kuehlmodus"]:checked');
         const isDehumidify = checkedKuehlmodus ? checkedKuehlmodus.value === 'dehumidify' : false;
-        
-        // Hide/show humidity controls
-        const rhInputGroup = dom.rhZuluft.parentElement;
-        const rhSliderGroup = document.getElementById('rhZuluftSliderGroup');
-
-        if (isActive && isDehumidify) {
-            if(rhInputGroup) rhInputGroup.style.display = 'block';
-            if(rhSliderGroup) rhSliderGroup.style.display = 'block';
-        } else {
-            if(rhInputGroup) rhInputGroup.style.display = 'none';
-            if(rhSliderGroup) rhSliderGroup.style.display = 'none';
-        }
+        dom.sollFeuchteWrapper.style.display = isActive && isDehumidify ? 'block' : 'none';
     }
     
     function syncAllSlidersToInputs(){
@@ -390,7 +368,6 @@ document.addEventListener('DOMContentLoaded', () => {
         syncSliderToInput(dom.rhZuluft, dom.rhZuluftSlider, dom.rhZuluftLabel, true);
     }
     function syncSliderToInput(input, slider, label, isFloat = false) {
-        if (!input || !slider || !label) return;
         const newValue = parseFloat(input.value);
         if(isNaN(newValue)) return;
         
@@ -415,6 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!isNaN(tage)) dom.betriebsstundenGesamt.value = (tage * 24).toFixed(0);
         }
     }
+    
     function storeInitialValues() {
         allInteractiveElements.forEach(el => {
             if (el.type === 'checkbox' || el.type === 'radio') {
@@ -424,43 +402,37 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
-    // --- INITIALIZATION: Explicit and separated listeners ---
+
+    // --- INITIALIZATION ---
     function addEventListeners() {
         // Buttons
         if (dom.resetBtn) dom.resetBtn.addEventListener('click', resetToDefaults);
         if (dom.resetSlidersBtn) dom.resetSlidersBtn.addEventListener('click', resetSlidersToRef);
         if (dom.setReferenceBtn) dom.setReferenceBtn.addEventListener('click', handleSetReference);
 
-        // UI Toggles & Selects
-        if (dom.kuehlerAktiv) dom.kuehlerAktiv.addEventListener('change', () => { handleKuehlerToggle(); calculateAll(); });
-        if (dom.fanCostActive) dom.fanCostActive.addEventListener('change', calculateAll);
-        if (dom.kuehlmodusInputs) dom.kuehlmodusInputs.forEach(radio => radio.addEventListener('change', () => { handleKuehlerToggle(); calculateAll(); }));
-        
-        // Simple number inputs
-        const simpleInputs = [
+        // All other inputs trigger a recalculation
+        const inputsToListen = [
             dom.tempAussen, dom.rhAussen, dom.druck, dom.preisWaerme, dom.preisStrom,
             dom.preisKaelte, dom.tempHeizVorlauf, dom.tempHeizRuecklauf, 
-            dom.tempKuehlVorlauf, dom.tempKuehlRuecklauf, dom.sfp, dom.stundenHeizen, dom.stundenKuehlen
+            dom.tempKuehlVorlauf, dom.tempKuehlRuecklauf, dom.sfp, dom.stundenHeizen, dom.stundenKuehlen,
+            dom.kuehlerAktiv, dom.fanCostActive
         ];
-        simpleInputs.forEach(input => {
-            if (input) input.addEventListener('input', () => { enforceLimits(input); calculateAll(); });
+        inputsToListen.forEach(input => {
+            if (input) {
+                const eventType = input.type === 'checkbox' ? 'change' : 'input';
+                input.addEventListener(eventType, calculateAll);
+            }
         });
         
-        // Linked Inputs (Hours/Days)
+        if(dom.kuehlmodusInputs) dom.kuehlmodusInputs.forEach(radio => radio.addEventListener('change', () => { handleKuehlerToggle(); calculateAll(); }));
+        
         if (dom.betriebsstundenGesamt) dom.betriebsstundenGesamt.addEventListener('input', (e) => { enforceLimits(e.target); updateBetriebszeit(e.target.id); calculateAll(); });
         if (dom.betriebstageGesamt) dom.betriebstageGesamt.addEventListener('input', (e) => { enforceLimits(e.target); updateBetriebszeit(e.target.id); calculateAll(); });
 
-        // Synced Number Box -> Slider
         if (dom.volumenstrom) dom.volumenstrom.addEventListener('input', () => { enforceLimits(dom.volumenstrom); syncAllSlidersToInputs(); calculateAll(); });
         if (dom.tempZuluft) dom.tempZuluft.addEventListener('input', () => { enforceLimits(dom.tempZuluft); syncAllSlidersToInputs(); calculateAll(); });
-        if (dom.rhZuluft) dom.rhZuluft.addEventListener('input', () => { 
-            enforceLimits(dom.rhZuluft); 
-            syncAllSlidersToInputs(); 
-            calculateAll(); 
-        });
+        if (dom.rhZuluft) dom.rhZuluft.addEventListener('input', () => { enforceLimits(dom.rhZuluft); syncAllSlidersToInputs(); calculateAll(); });
         
-        // Synced Slider -> Number Box
         if (dom.volumenstromSlider) dom.volumenstromSlider.addEventListener('input', () => {
             dom.volumenstrom.value = dom.volumenstromSlider.value;
             dom.volumenstromLabel.textContent = formatGerman(parseFloat(dom.volumenstromSlider.value), 0);
