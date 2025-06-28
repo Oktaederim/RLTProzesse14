@@ -135,7 +135,7 @@
                 </div>
                 <hr>
                 <h4>Ventilator-Betriebskosten</h4>
-                <div class="grid-container fan-cost-grid">
+                 <div class="grid-container fan-cost-grid">
                      <div class="input-group">
                          <label for="sfp">Spez. Ventilatorleistung (SFP)</label>
                          <input type="number" id="sfp" value="0.555" step="0.001" min="0">
@@ -143,8 +143,8 @@
                       <div class="input-group-inline">
                         <label>Gesamt-Betriebszeit (h/a oder d/a)</label>
                         <div>
-                            <input type="number" id="betriebsstundenGesamt" value="8760" step="10" min="0" title="Gesamt-Betriebsstunden pro Jahr">
-                             <input type="number" id="betriebstageGesamt" value="365" step="1" min="0" title="Gesamt-Betriebstage pro Jahr">
+                            <input type="number" id="betriebsstundenGesamt" value="2400" step="10" min="0" title="Gesamt-Betriebsstunden pro Jahr">
+                             <input type="number" id="betriebstageGesamt" value="100" step="1" min="0" title="Gesamt-Betriebstage pro Jahr">
                         </div>
                     </div>
                 </div>
@@ -164,7 +164,7 @@
                      <div class="slider-group"><label>Zuluft-Temperatur: <span id="tempZuluftLabel">20,0</span> °C</label><input type="range" id="tempZuluftSlider" min="14" max="26" step="0.1" value="20.0"></div>
                      <div class="slider-group" id="rhZuluftSliderGroup"><label>Zuluft-Rel. Feuchte: <span id="rhZuluftLabel">60,0</span> %</label><input type="range" id="rhZuluftSlider" min="30" max="70" step="0.5" value="60.0"></div>
                     <button id="setReferenceBtn">Referenz festlegen</button>
-                    <div id="reference-details"><hr><div class="cost-display change reference"><span class="cost-label">Referenzkosten:</span><span class="cost-value" id="kostenReferenz">--</span></div><div class="cost-display change"><span class="cost-label">Δ Kosten:</span><span class="cost-value" id="kostenAenderung">--</span></div><div class="cost-display change parameter"><span class="cost-label">Δ Temperatur:</span><span class="cost-value" id="tempAenderung">--</span></div><div class="cost-display change parameter"><span class="cost-label">Δ Feuchte:</span><span class="cost-value" id="rhAenderung">--</span></div><div class="cost-display change parameter"><span class="cost-label">Δ Volumenstrom:</span><span class="cost-value" id="volumenAenderung">--</span></div></div>
+                    <div id="reference-details" class="invisible"><hr><div class="cost-display change reference"><span class="cost-label">Referenzkosten:</span><span class="cost-value" id="kostenReferenz">--</span></div><div class="cost-display change"><span class="cost-label">Δ Kosten:</span><span class="cost-value" id="kostenAenderung">--</span></div><div class="cost-display change parameter"><span class="cost-label">Δ Temperatur:</span><span class="cost-value" id="tempAenderung">--</span></div><div class="cost-display change parameter"><span class="cost-label">Δ Feuchte:</span><span class="cost-value" id="rhAenderung">--</span></div><div class="cost-display change parameter"><span class="cost-label">Δ Volumenstrom:</span><span class="cost-value" id="volumenAenderung">--</span></div></div>
                 </div>
                 <div class="cost-output-section">
                     <h4>Leistung & Betriebskosten (€/h)</h4>
