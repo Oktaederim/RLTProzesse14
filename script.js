@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             dom.processOverviewContainer.innerHTML = `<div class="process-overview process-error">Ein unerwarteter Fehler ist aufgetreten.</div>`;
         }
     }
-function formatGerman(num, decimals = 0) {
+    function formatGerman(num, decimals = 0) {
         if (isNaN(num)) return '--';
         return num.toLocaleString('de-DE', {
             minimumFractionDigits: decimals,
@@ -326,7 +326,7 @@ function formatGerman(num, decimals = 0) {
         comp.node.classList.toggle('inactive', power <= 0);
         if (comp.kondensat) comp.kondensat.textContent = formatGerman(kondensat, 2);
         if (comp.wv) comp.wv.textContent = formatGerman(wasserstrom, 2);
-    }    
+    }
     function handleSetReference() {
         referenceState = { cost: currentTotalCost, temp: parseFloat(dom.tempZuluft.value), rh: parseFloat(dom.rhZuluft.value), vol: parseFloat(dom.volumenstrom.value) };
         dom.resetSlidersBtn.disabled = false;
@@ -415,4 +415,73 @@ function formatGerman(num, decimals = 0) {
             if (!isNaN(tage)) dom.betriebsstundenGesamt.value = (tage * 24).toFixed(0);
         }
     }
+    function storeInitialValues() {
+        allInteractiveElements.forEach(el => {
+            if (el.type === 'checkbox' || el.type === 'radio') {
+                el.dataset.defaultChecked = el.checked;
+            } else {
+                el.dataset.defaultValue = el.value;
+            }
+        });
+    }
     
+    // --- INITIALIZATION: Explicit and separated listeners ---
+    function addEventListeners() {
+        // Buttons
+        if (dom.resetBtn) dom.resetBtn.addEventListener('click', resetToDefaults);
+        if (dom.resetSlidersBtn) dom.resetSlidersBtn.addEventListener('click', resetSlidersToRef);
+        if (dom.setReferenceBtn) dom.setReferenceBtn.addEventListener('click', handleSetReference);
+
+        // UI Toggles & Selects
+        if (dom.kuehlerAktiv) dom.kuehlerAktiv.addEventListener('change', () => { handleKuehlerToggle(); calculateAll(); });
+        if (dom.fanCostActive) dom.fanCostActive.addEventListener('change', calculateAll);
+        if (dom.kuehlmodusInputs) dom.kuehlmodusInputs.forEach(radio => radio.addEventListener('change', () => { handleKuehlerToggle(); calculateAll(); }));
+        
+        // Simple number inputs
+        const simpleInputs = [
+            dom.tempAussen, dom.rhAussen, dom.druck, dom.preisWaerme, dom.preisStrom,
+            dom.preisKaelte, dom.tempHeizVorlauf, dom.tempHeizRuecklauf, 
+            dom.tempKuehlVorlauf, dom.tempKuehlRuecklauf, dom.sfp, dom.stundenHeizen, dom.stundenKuehlen
+        ];
+        simpleInputs.forEach(input => {
+            if (input) input.addEventListener('input', () => { enforceLimits(input); calculateAll(); });
+        });
+        
+        // Linked Inputs (Hours/Days)
+        if (dom.betriebsstundenGesamt) dom.betriebsstundenGesamt.addEventListener('input', (e) => { enforceLimits(e.target); updateBetriebszeit(e.target.id); calculateAll(); });
+        if (dom.betriebstageGesamt) dom.betriebstageGesamt.addEventListener('input', (e) => { enforceLimits(e.target); updateBetriebszeit(e.target.id); calculateAll(); });
+
+        // Synced Number Box -> Slider
+        if (dom.volumenstrom) dom.volumenstrom.addEventListener('input', () => { enforceLimits(dom.volumenstrom); syncAllSlidersToInputs(); calculateAll(); });
+        if (dom.tempZuluft) dom.tempZuluft.addEventListener('input', () => { enforceLimits(dom.tempZuluft); syncAllSlidersToInputs(); calculateAll(); });
+        if (dom.rhZuluft) dom.rhZuluft.addEventListener('input', () => { 
+            enforceLimits(dom.rhZuluft); 
+            syncAllSlidersToInputs(); 
+            calculateAll(); 
+        });
+        
+        // Synced Slider -> Number Box
+        if (dom.volumenstromSlider) dom.volumenstromSlider.addEventListener('input', () => {
+            dom.volumenstrom.value = dom.volumenstromSlider.value;
+            dom.volumenstromLabel.textContent = formatGerman(parseFloat(dom.volumenstromSlider.value), 0);
+            calculateAll();
+        });
+        if (dom.tempZuluftSlider) dom.tempZuluftSlider.addEventListener('input', () => {
+            const value = parseFloat(dom.tempZuluftSlider.value).toFixed(1);
+            dom.tempZuluft.value = value;
+            dom.tempZuluftLabel.textContent = formatGerman(parseFloat(value), 1);
+            calculateAll();
+        });
+        if (dom.rhZuluftSlider) dom.rhZuluftSlider.addEventListener('input', () => {
+            const value = parseFloat(dom.rhZuluftSlider.value).toFixed(1);
+            dom.rhZuluft.value = value;
+            dom.rhZuluftLabel.textContent = formatGerman(parseFloat(value), 1);
+            calculateAll();
+        });
+    }
+
+    addEventListeners();
+    handleKuehlerToggle();
+    syncAllSlidersToInputs();
+    calculateAll();
+});
